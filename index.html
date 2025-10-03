@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -1290,7 +1291,7 @@
             
             const typeClasses = {
                 success: 'bg-green-100 border border-green-500 text-green-800',
-                error: 'bg-red-100 border-red-500 text-red-800',
+                error: 'bg-red-100 border border-red-500 text-red-800',
                 info: 'bg-yellow-100 border border-yellow-500 text-yellow-800',
             };
 
@@ -1341,17 +1342,17 @@
             );
         };
 
-        // --- Component: FillInTheBlankQuestion.tsx ---
-        const FillInTheBlankQuestion = ({ question, isAnswered, onSubmit, showMessage, questionIndex }) => {
+        // --- Component: FillInTheBlankQuestion.tsx (FIXED) ---
+        const FillInTheBlankQuestion = ({ question, isAnswered, onSubmit, showMessage, questionIndex, isCorrect }) => {
             const [inputValue, setInputValue] = React.useState('');
             const inputRef = React.useRef(null);
 
             React.useEffect(() => {
                 setInputValue('');
-                if (inputRef.current && !isAnswered) {
+                if (inputRef.current) {
                     inputRef.current.focus();
                 }
-            }, [question, isAnswered]);
+            }, [question]);
 
             const handleSubmitClick = () => {
                 const trimmedInput = inputValue.trim();
@@ -1359,34 +1360,29 @@
                     showMessage('Vui lòng điền câu trả lời của bạn!', 'info');
                     return;
                 }
-                const isCorrect = trimmedInput.toLowerCase() === question.correctAnswer.toLowerCase();
-                onSubmit(trimmedInput, isCorrect);
+                const wasCorrect = trimmedInput.toLowerCase() === question.correctAnswer.toLowerCase();
+                onSubmit(trimmedInput, wasCorrect);
             };
             
             const questionTextParts = React.useMemo(() => {
                 let text = question.question.replace(/^\d+\.\s*/, '');
-                
                 const markers = ['____', '________', '__________', '___________', '_________', '_______', '______', '_____', '___', '__', '_'];
-
                 for (const marker of markers) {
                     if (text.includes(marker)) {
                         const parts = text.split(marker);
                         return [parts[0], parts.slice(1).join(marker)];
                     }
                 }
-                 // Handle partial words like `c__se`
                 const partialMatch = text.match(/(.*)__+(.*)/) || text.match(/(.*)\_+(.*)/);
                 if (partialMatch) {
                     return [partialMatch[1], partialMatch[2]];
                 }
-
                 return [text, '']; 
             }, [question.question]);
             
             let inputClasses = 'inline-block mx-2 p-2 border-2 rounded-lg text-xl text-center shadow-sm transition duration-200 align-baseline w-48 font-mono font-bold';
             if (isAnswered) {
-                const isSubmissionCorrect = inputValue.trim().toLowerCase() === question.correctAnswer.toLowerCase();
-                inputClasses += isSubmissionCorrect ? ' border-green-500 bg-green-50' : ' border-red-500 bg-red-50';
+                inputClasses += isCorrect ? ' border-green-500 bg-green-50' : ' border-red-500 bg-red-50';
             } else {
                 inputClasses += ' border-gray-300 focus:border-blue-500';
             }
@@ -1395,7 +1391,6 @@
                 width: `${Math.max(6, question.correctAnswer.length * 2)}rem`, 
                 maxWidth: '100%',
             };
-
 
             return (
                 <div className="space-y-4">
@@ -1615,14 +1610,14 @@
                         <p className="text-xl text-gray-500">Bộ đề luyện thi IOE dành cho khối 3</p>
                     </header>
                     <div className="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                        <h2 className="text-2xl font-bold mb-4 text-gray-700">Chào mừng bé!</h2>
+                        <h2 className="text-2xl font-bold mb-4 text-gray-700">Chào mừng bạn!</h2>
                         <p className="text-gray-600 mb-6 text-lg">Mỗi câu trả lời đúng được cộng 10 điểm. Bài thi có {totalQuestions} câu.</p>
                         <div className="space-y-4">
-                            <label htmlFor="player-name" className="block text-base font-medium text-gray-700 text-left">Nhập tên của bé để bắt đầu:</label>
+                            <label htmlFor="player-name" className="block text-base font-medium text-gray-700 text-left">Nhập tên của bạn để bắt đầu:</label>
                             <input
                                 type="text"
                                 id="player-name"
-                                placeholder="Tên của bé"
+                                placeholder="Tên của bạn"
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg shadow-sm transition duration-150"
                                 maxLength={50}
                                 value={name}
@@ -1649,7 +1644,7 @@
             
             let encouragement = "Cố gắng hơn ở lần sau nhé!";
             if (percentage >= 90) {
-                encouragement = "Xuất sắc! Bé thật là giỏi!";
+                encouragement = "Xuất sắc! Bạn thật là giỏi!";
             } else if (percentage >= 70) {
                 encouragement = "Làm tốt lắm! Chỉ cần cố gắng thêm một chút nữa thôi.";
             } else if (percentage >= 50) {
@@ -1664,7 +1659,7 @@
                     </p>
                      <p className="text-lg text-gray-600 mb-6">{encouragement}</p>
                     <div className="bg-white p-8 rounded-xl shadow-lg inline-block border border-gray-100">
-                        <p className="text-2xl font-bold mb-8 text-gray-700">Điểm số của bé:</p>
+                        <p className="text-2xl font-bold mb-8 text-gray-700">Điểm số của bạn:</p>
                         <p className={`text-7xl font-black mb-10 text-blue-700`}>
                             {score} / {maxScore}
                         </p>
@@ -1729,6 +1724,8 @@
             const [isHintVisible, setIsHintVisible] = React.useState(false);
             const [message, setMessage] = React.useState(null);
             const incorrectAnswersRef = React.useRef([]);
+
+            const currentQuestion = questionSet[currentQuestionIndex];
 
             React.useEffect(() => {
                 incorrectAnswersRef.current = [];
@@ -1808,7 +1805,7 @@
                     </header>
 
                     <div className="flex justify-between items-center mb-6 py-2 px-4 bg-blue-50 rounded-xl shadow-inner border border-blue-100">
-                        <p className="text-lg font-medium text-blue-800">Bé: <span className="font-bold">{playerName}</span></p>
+                        <p className="text-lg font-medium text-blue-800">Bạn: <span className="font-bold">{playerName}</span></p>
                         <p className="text-lg font-medium text-blue-800">Điểm: <span className="text-2xl font-extrabold text-red-600">{score}</span></p>
                         <p className="text-lg font-medium text-blue-800">Câu: <span className="font-bold">{currentQuestionIndex + 1}/{totalQuestions}</span></p>
                     </div>
@@ -1854,13 +1851,17 @@
             const [shuffledQuestions, setShuffledQuestions] = React.useState([]);
             const [incorrectAnswers, setIncorrectAnswers] = React.useState([]);
 
-            React.useEffect(() => {
+            const shuffleQuestionsAndSet = () => {
                 const array = [...questions];
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [array[i], array[j]] = [array[j], array[i]];
                 }
                 setShuffledQuestions(array);
+            };
+
+            React.useEffect(() => {
+                shuffleQuestionsAndSet();
             }, []);
 
             const handleStartQuiz = (name) => {
@@ -1877,12 +1878,10 @@
             };
             
             const handleRestartQuiz = () => {
-                 const array = [...questions];
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                setShuffledQuestions(array);
+                shuffleQuestionsAndSet();
+                setPlayerName('');
+                setScore(0);
+                setIncorrectAnswers([]);
                 setGameState('start');
             };
 
